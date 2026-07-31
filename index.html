@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#111B2B">
+<title>VoltSuivi — Carnet d'énergie</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Mono:wght@500;600&family=Instrument+Sans:wght@400;500;600&display=swap');
+
+* { box-sizing: border-box; margin: 0; }
+html, body { background: #F2F4F7; }
+body { font-family: 'Instrument Sans', system-ui, -apple-system, sans-serif; }
+
+:root {
+  --bg: #F2F4F7;
+  --encre: #111B2B;
+  --brume: #5C6A7A;
+  --carte: #FFFFFF;
+  --ligne: #E2E8EF;
+  --cuivre: #C25E1E;
+  --cuivre-f: #9A4611;
+  --circuit: #1D4FD7;
+  --vert: #2E9862;
+  --vert-f: #1E7A4C;
+  --vert-bg: #E4F3EA;
+  --dom: #B4780C;
+  --dom-bg: #FBEEDA;
+  --trav: #7C3AED;
+  --trav-bg: #EFE7FD;
+  --autreL: #64748B;
+  --autreL-bg: #EAEDF1;
+  --fill: #F1F3F6;
+  --chip-bg: #E9EEFB;
+  /* toujours foncées, quel que soit le thème — le bandeau du haut reste un accent sombre */
+  --accent-dark: #111B2B;
+  --accent-dark-2: #22304A;
+}
+:root.vs-dark {
+  --bg: #0B0F17;
+  --encre: #E9EDF3;
+  --brume: #93A0B2;
+  --carte: #161C27;
+  --ligne: #262F3D;
+  --cuivre: #E8935B;
+  --cuivre-f: #F3B183;
+  --circuit: #6C97F2;
+  --vert: #45C489;
+  --vert-f: #7BE8B2;
+  --vert-bg: rgba(46,152,98,.22);
+  --dom: #E3A94E;
+  --dom-bg: rgba(180,120,12,.22);
+  --trav: #B79CFB;
+  --trav-bg: rgba(124,58,237,.25);
+  --autreL: #9FAEC1;
+  --autreL-bg: rgba(100,116,139,.22);
+  --fill: #1C2430;
+  --chip-bg: rgba(108,151,242,.16);
+}
+html, body { background: var(--bg); }
+.vs-root {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--encre);
+  font-family: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+  padding: 18px 16px 116px;
+  -webkit-font-smoothing: antialiased;
+  transition: background .25s ease, color .25s ease;
+}
+.vs-root * { box-sizing: border-box; margin: 0; }
+.vs-root button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+.vs-root :focus-visible { outline: 2px solid var(--circuit); outline-offset: 2px; border-radius: 6px; }
+.vs-mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-weight: 600; letter-spacing: -0.01em; }
+.vs-wrap { max-width: 480px; margin: 0 auto; }
+
+@keyframes vsIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.vs-in { animation: vsIn .5s cubic-bezier(.2,.7,.2,1) both; }
+
+/* entête */
+.vs-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.vs-logo {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: var(--accent-dark); color: #F6C99A; font-size: 16px;
+  display: grid; place-items: center; flex-shrink: 0;
+}
+.vs-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 19px; line-height: 1.1; }
+.vs-subtitle { font-size: 12px; color: var(--brume); margin-top: 1px; }
+.vs-theme-btn {
+  margin-left: auto; width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+  background: var(--fill); font-size: 15px; display: grid; place-items: center;
+  transition: background .2s;
+}
+.vs-theme-btn:active { transform: scale(.94); }
+
+/* sélecteur de véhicules */
+.vs-veh-strip { display: flex; gap: 10px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 2px; }
+.vs-veh-chip { display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; width: 60px; }
+.vs-veh-photo {
+  width: 48px; height: 48px; border-radius: 50%; background-size: cover; background-position: center;
+  display: grid; place-items: center; font-size: 20px; background-color: var(--fill); color: var(--brume);
+  border: 2px solid transparent; transition: border-color .15s, transform .1s;
+}
+.vs-veh-chip.on .vs-veh-photo { border-color: var(--cuivre); }
+.vs-veh-chip:active .vs-veh-photo { transform: scale(.94); }
+.vs-veh-name { font-size: 10.5px; color: var(--brume); font-weight: 600; max-width: 58px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vs-veh-chip.on .vs-veh-name { color: var(--encre); }
+.vs-veh-add .vs-veh-photo { background: #FFF; border: 2px dashed var(--ligne); color: var(--brume); font-size: 22px; font-weight: 300; }
+
+/* héro « compteur » */
+.vs-hero {
+  background: linear-gradient(160deg, var(--accent-dark) 0%, var(--accent-dark-2) 130%);
+  color: #EFF3F8; border-radius: 20px; padding: 18px 18px 14px;
+  box-shadow: 0 12px 28px rgba(17, 27, 43, .18);
+}
+.vs-hero-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.vs-eyebrow { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #A9B6C6; font-weight: 600; }
+.vs-delta { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 99px; background: rgba(255,255,255,.1); }
+.vs-delta.ok { color: #8FE0AE; }
+.vs-delta.up { color: #F3B183; }
+.vs-hero-val {
+  font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800;
+  font-size: 46px; line-height: 1.05; margin-top: 8px; color: #F6C99A;
+  font-variant-numeric: tabular-nums;
+}
+.vs-ruler {
+  height: 9px; margin: 12px 0 10px;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.55) 0 1px, transparent 1px 36px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.22) 0 1px, transparent 1px 7px);
+  background-size: 100% 9px, 100% 5px;
+  background-repeat: no-repeat;
+  background-position: bottom, bottom;
+}
+.vs-hero-sub { display: flex; align-items: baseline; gap: 8px; font-size: 13px; color: #C4CEDA; }
+.vs-hero-sub b { color: #FFFFFF; font-size: 14px; }
+.vs-dot { opacity: .5; }
+.vs-hero-src { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.vs-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 99px; }
+.vs-tag.reseau { background: rgba(255,255,255,.1); color: #D8E0EA; }
+.vs-tag.vert { background: rgba(66, 178, 116, .22); color: #8FE0AE; }
+.vs-seg {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  background: rgba(255,255,255,.09); border-radius: 12px; padding: 4px; margin-top: 14px;
+}
+.vs-seg button {
+  padding: 7px 0; border-radius: 9px; font-size: 12.5px; font-weight: 600;
+  color: #C4CEDA; transition: background .2s, color .2s;
+}
+.vs-seg button.on { background: #FFFFFF; color: var(--accent-dark); box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+
+/* cartes */
+.vs-card {
+  background: var(--carte); border: 1px solid var(--ligne); border-radius: 18px;
+  padding: 14px 14px 12px; margin-top: 12px;
+}
+.vs-card-h { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--brume); font-weight: 600; margin-bottom: 10px; }
+.vs-h-row { display: flex; justify-content: space-between; align-items: center; }
+.vs-count { color: var(--cuivre); margin-left: 4px; }
+.vs-chart { margin-left: -2px; }
+.vs-apercu { min-height: 46px; padding: 10px 12px; margin-bottom: 8px; border-radius: 13px; background: var(--fill); border: 1px solid var(--ligne); }
+.vs-apercu-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.vs-apercu-label { font-size: 12.5px; font-weight: 700; text-transform: capitalize; color: var(--encre); }
+.vs-apercu-val { font-size: 16px; color: var(--cuivre-f); }
+.vs-apercu-sub { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 3px; font-size: 11px; color: var(--brume); }
+.vs-apercu-src { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.vs-apercu-src .vs-pt { margin-left: 6px; }
+.vs-apercu-src .vs-pt:first-child { margin-left: 0; }
+.vs-apercu-vide { font-size: 12px; color: #9AA6B4; text-align: center; padding: 4px 0; }
+.vs-chart-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 8px; padding: 0 2px; font-size: 11.5px; color: var(--brume); font-weight: 600; }
+.vs-chart-legend span:not(.vs-chart-hint) { display: inline-flex; align-items: center; gap: 5px; }
+.vs-chart-hint { margin-left: auto; font-weight: 500; color: #9AA6B4; font-size: 10.5px; text-align: right; }
+
+/* origine / lieu */
+.vs-pct { color: var(--vert-f); letter-spacing: 0; text-transform: none; font-size: 12px; }
+.vs-split { display: flex; height: 10px; border-radius: 99px; overflow: hidden; background: var(--fill); margin-bottom: 10px; }
+.vs-split-seg { height: 100%; transition: width .4s cubic-bezier(.2,.7,.2,1); }
+.vs-split-seg.reseau { background: var(--encre); }
+.vs-split-seg.vert { background: var(--vert); }
+.vs-split-seg.domicile { background: var(--dom); }
+.vs-split-seg.travail { background: var(--trav); }
+.vs-split-seg.autre { background: var(--autreL); }
+.vs-src-row { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 7px 0; font-size: 13px; }
+.vs-src-row + .vs-src-row { border-top: 1px solid var(--ligne); }
+.vs-src-name { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; }
+.vs-pt { width: 8px; height: 8px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
+.vs-pt.reseau { background: var(--encre); }
+.vs-pt.vert { background: var(--vert); }
+.vs-pt.domicile { background: var(--dom); }
+.vs-pt.travail { background: var(--trav); }
+.vs-pt.autre { background: var(--autreL); }
+.vs-src-cost { color: var(--brume); font-size: 12px; min-width: 64px; text-align: right; }
+.vs-save { margin-top: 10px; font-size: 12.5px; font-weight: 600; color: var(--vert-f); background: var(--vert-bg); border-radius: 10px; padding: 8px 11px; text-align: center; }
+
+.vs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.vs-stat { background: var(--carte); border: 1px solid var(--ligne); border-radius: 16px; padding: 12px; }
+.vs-stat-ico {
+  width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center;
+  background: #F6EADF; color: var(--cuivre-f); margin-bottom: 8px; font-size: 14px;
+}
+.vs-stat-label { font-size: 11.5px; color: var(--brume); font-weight: 500; }
+.vs-stat-val { font-size: 17px; margin-top: 3px; color: var(--encre); }
+.vs-stat-unit { font-size: 11px; color: var(--brume); font-family: 'Instrument Sans', sans-serif; font-weight: 500; }
+
+.vs-total { text-align: center; font-size: 12.5px; color: var(--brume); margin-top: 12px; }
+.vs-total b { color: var(--encre); }
+.vs-co2 {
+  background: var(--vert-bg); color: var(--vert-f); border-radius: 14px;
+  padding: 11px 14px; margin-top: 12px; font-size: 12.5px; font-weight: 600; text-align: center;
+}
+.vs-co2 b { font-size: 15px; }
+.vs-co2-note { display: block; font-weight: 500; opacity: .8; font-size: 10.5px; margin-top: 3px; }
+.vs-footer { text-align: center; margin-top: 18px; font-size: 11.5px; color: var(--brume); }
+.vs-footer button { color: var(--brume); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+
+/* historique repliable */
+.vs-histo { padding-bottom: 6px; }
+.vs-toggle { width: 100%; margin-bottom: 0; }
+.vs-toggle-r { display: inline-flex; align-items: center; gap: 20px; text-transform: none; letter-spacing: 0; }
+.vs-chev { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; min-height: 28px; border-radius: 50%; background: var(--fill); transition: transform .25s ease, background .15s; color: var(--brume); font-size: 15px; }
+.vs-chev.open { transform: rotate(180deg); }
+.vs-collapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .32s cubic-bezier(.2,.7,.2,1); }
+.vs-collapse.open { grid-template-rows: 1fr; }
+.vs-collapse-inner { overflow: hidden; }
+
+.vs-list { display: flex; flex-direction: column; padding-top: 4px; }
+.vs-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 2px; border-top: 1px solid var(--ligne);
+}
+.vs-row:first-child { border-top: none; }
+.vs-lieu-dot {
+  width: 22px; height: 22px; border-radius: 7px; flex-shrink: 0; font-size: 12px;
+  display: grid; place-items: center;
+}
+.vs-lieu-dot.domicile { background: var(--dom-bg); color: var(--dom); }
+.vs-lieu-dot.travail { background: var(--trav-bg); color: var(--trav); }
+.vs-lieu-dot.autre { background: var(--autreL-bg); color: var(--autreL); }
+.vs-row-l { flex: 1; min-width: 0; }
+.vs-row-date { font-size: 13px; font-weight: 600; text-transform: capitalize; }
+.vs-row-odo { font-size: 11.5px; color: var(--brume); margin-top: 1px; }
+.vs-chips { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
+.vs-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11.5px; padding: 4px 8px; border-radius: 8px;
+  background: var(--chip-bg); color: var(--circuit); white-space: nowrap;
+}
+.vs-chip.vert { background: var(--vert-bg); color: var(--vert-f); }
+.vs-row-r { text-align: right; min-width: 72px; }
+.vs-row-cost { font-size: 14px; }
+.vs-row-per { font-size: 10.5px; color: var(--brume); }
+.vs-del { color: #9AA6B4; padding: 6px; border-radius: 8px; transition: color .15s, background .15s; font-size: 14px; }
+.vs-del:hover { color: #C0392B; background: #FBEDEA; }
+.vs-clear { font-size: 11.5px; color: var(--brume); text-transform: none; letter-spacing: 0; font-weight: 600; padding: 6px 2px; }
+.vs-clear.arm { color: #C0392B; }
+
+/* état vide */
+.vs-empty {
+  background: var(--carte); border: 1px solid var(--ligne); border-radius: 20px;
+  padding: 28px 22px; text-align: center;
+}
+.vs-empty-ico {
+  width: 44px; height: 44px; border-radius: 14px; margin: 0 auto 12px; font-size: 20px;
+  background: var(--accent-dark); color: #F6C99A; display: grid; place-items: center;
+}
+.vs-empty-t { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 18px; }
+.vs-empty-p { font-size: 13.5px; color: var(--brume); line-height: 1.5; margin: 8px 0 16px; }
+.vs-btn-p {
+  display: block; width: 100%; padding: 13px; border-radius: 13px;
+  background: var(--cuivre); color: #FFF; font-weight: 600; font-size: 14.5px;
+  transition: transform .1s, background .2s;
+}
+.vs-btn-p:active { transform: scale(.98); }
+
+/* bouton flottant */
+.vs-fab {
+  position: fixed; right: 18px; bottom: 22px; width: 56px; height: 56px;
+  border-radius: 18px; background: var(--cuivre); color: #FFF;
+  display: grid; place-items: center; font-size: 28px; font-weight: 300; line-height: 1;
+  box-shadow: 0 10px 24px rgba(194, 94, 30, .4);
+  transition: transform .12s, background .2s; z-index: 40;
+}
+.vs-fab:hover { background: var(--cuivre-f); }
+.vs-fab:active { transform: scale(.94); }
+
+/* feuille d'ajout / menu détail / véhicule */
+.vs-backdrop {
+  position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 50;
+  background: rgba(17, 27, 43, .45);
+  display: flex; align-items: flex-end; justify-content: center;
+  animation: vsFade .25s both;
+}
+@keyframes vsFade { from { opacity: 0; } to { opacity: 1; } }
+.vs-sheet {
+  background: var(--carte); width: 100%; max-width: 480px;
+  border-radius: 22px 22px 0 0; padding: 18px 18px 24px;
+  animation: vsUp .32s cubic-bezier(.2,.7,.2,1) both;
+  max-height: 88vh; overflow-y: auto;
+  font-family: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+  color: var(--encre);
+}
+@keyframes vsUp { from { transform: translateY(100%); } to { transform: none; } }
+.vs-sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.vs-sheet-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 18px; }
+.vs-close { color: var(--brume); padding: 6px; border-radius: 8px; flex-shrink: 0; font-size: 16px; cursor: pointer; border: none; background: none; }
+
+/* menu détaillé d'une période (double-tap sur le graphique) */
+.vs-detail { padding-top: 14px; }
+.vs-detail-head { display: flex; align-items: center; gap: 4px; margin-bottom: 16px; }
+.vs-nav {
+  width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; font-size: 18px;
+  display: grid; place-items: center; color: var(--encre); cursor: pointer; border: none;
+  background: var(--fill); transition: opacity .15s, background .15s;
+}
+.vs-nav:disabled { opacity: .3; cursor: default; }
+.vs-nav:not(:disabled):active { background: var(--ligne); }
+.vs-detail-title { flex: 1; min-width: 0; text-align: center; }
+.vs-detail-title .vs-sheet-title { font-size: 16px; }
+.vs-detail-sub { font-size: 12px; color: var(--brume); margin-top: 2px; }
+.vs-detail-block { border-top: 1px solid var(--ligne); padding-top: 14px; margin-top: 14px; }
+.vs-detail-block:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
+.vs-detail-label { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--brume); font-weight: 600; margin-bottom: 10px; }
+.vs-field { display: block; margin-bottom: 13px; }
+.vs-label { display: block; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--brume); font-weight: 600; margin-bottom: 6px; }
+.vs-field input, .vs-input-wrap input {
+  width: 100%; padding: 12px 13px; border-radius: 12px;
+  border: 1px solid var(--ligne); background: var(--fill);
+  font-size: 16px; color: var(--encre);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace; font-weight: 500;
+}
+.vs-field input[type="text"] { font-family: 'Instrument Sans', sans-serif; }
+.vs-field input[type="date"] { font-family: 'Instrument Sans', sans-serif; }
+.vs-field input:focus, .vs-input-wrap input:focus { border-color: var(--circuit); outline: none; background: #FFF; }
+.vs-input-wrap { position: relative; }
+.vs-suffix {
+  position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
+  font-size: 12px; color: var(--brume); font-weight: 600; pointer-events: none;
+}
+.vs-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.vs-lieu-sel { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.vs-lieu-sel.vs-2col { grid-template-columns: repeat(2, 1fr); }
+.vs-lieu-sel button {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 9px 4px; border-radius: 12px; border: 1px solid var(--ligne);
+  font-size: 11.5px; font-weight: 600; color: var(--brume); background: var(--fill); cursor: pointer;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.vs-lieu-sel button span { font-size: 17px; }
+.vs-lieu-sel button.domicile.on { border-color: var(--dom); color: var(--dom); background: var(--dom-bg); }
+.vs-lieu-sel button.travail.on { border-color: var(--trav); color: var(--trav); background: var(--trav-bg); }
+.vs-lieu-sel button.autre.on { border-color: var(--autreL); color: var(--autreL); background: var(--autreL-bg); }
+.vs-lieu-sel button.electrique.on { border-color: var(--circuit); color: var(--circuit); background: var(--chip-bg); }
+.vs-lieu-sel button.thermique.on { border-color: var(--cuivre); color: var(--cuivre-f); background: #FBEEE3; }
+.vs-block {
+  border: 1px solid var(--ligne); border-radius: 14px;
+  padding: 11px; margin-bottom: 11px; background: var(--fill);
+}
+.vs-block.vert { background: var(--vert-bg); border-color: var(--vert); }
+.vs-block-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
+.vs-block-t { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; }
+.vs-block-t.reseau { color: var(--encre); }
+.vs-block-t.vert { color: var(--vert-f); }
+.vs-block-note { font-size: 11px; color: var(--vert-f); font-weight: 500; }
+.vs-mode { display: inline-flex; gap: 4px; background: var(--fill); border-radius: 10px; padding: 3px; }
+.vs-mode button { padding: 5px 10px; border-radius: 8px; font-size: 11.5px; font-weight: 600; color: var(--brume); cursor: pointer; border: none; background: none; }
+.vs-mode button.on { background: var(--encre); color: var(--carte); }
+.vs-hint { font-size: 12px; color: var(--cuivre-f); margin: 2px 0 10px; font-weight: 500; min-height: 15px; }
+.vs-submit {
+  width: 100%; padding: 14px; border-radius: 14px; margin-top: 2px;
+  background: var(--cuivre); color: #FFF; font-weight: 700; font-size: 15px; cursor: pointer; border: none;
+  transition: opacity .2s, transform .1s;
+}
+.vs-submit:disabled { opacity: .35; cursor: not-allowed; }
+.vs-submit:not(:disabled):active { transform: scale(.98); }
+
+/* fiche véhicule */
+.vs-veh-photo-pick { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 16px; }
+.vs-veh-photo-big {
+  width: 84px; height: 84px; border-radius: 50%; overflow: hidden; background: var(--fill);
+  display: grid; place-items: center; font-size: 34px;
+}
+.vs-veh-photo-big img { width: 100%; height: 100%; object-fit: cover; }
+.vs-veh-photo-actions { display: flex; gap: 8px; }
+.vs-veh-photo-btn { font-size: 12px; font-weight: 600; color: var(--circuit); padding: 6px 10px; border-radius: 9px; background: var(--chip-bg); cursor: pointer; border: none; }
+.vs-veh-photo-btn.ghost { color: #9AA6B4; background: var(--fill); }
+.vs-veh-del { width: 100%; text-align: center; margin-top: 10px; font-size: 12.5px; font-weight: 600; color: #C0392B; padding: 10px; cursor: pointer; border: none; background: none; border-radius: 10px; }
+.vs-veh-del.arm { background: #FBEDEA; }
+
+@media (prefers-reduced-motion: reduce) {
+  .vs-root *, .vs-in, .vs-sheet, .vs-backdrop { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div id="app" class="vs-root"></div>
+
+<script>
+'use strict';
+
+/* ------------------------------- utilitaires ------------------------------ */
+
+const KEY = "voltsuivi-recharges-v1";
+const VKEY = "voltsuivi-vehicules-v1";
+const THEME_KEY = "voltsuivi-theme";
+
+function loadTheme() {
+  try { return localStorage.getItem(THEME_KEY) || "light"; } catch (e) { return "light"; }
+}
+function applyTheme(t) {
+  document.documentElement.classList.toggle("vs-dark", t === "dark");
+}
+let currentTheme = loadTheme();
+applyTheme(currentTheme);
+
+const todayISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+const eur = (n, max = 2) =>
+  n == null || !isFinite(n) ? "—" : n.toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: max });
+
+const num = (n, max = 1) =>
+  n == null || !isFinite(n) ? "—" : n.toLocaleString("fr-FR", { maximumFractionDigits: max });
+
+const pf = (s) => parseFloat(String(s).replace(",", "."));
+const round2 = (n) => Math.round(n * 100) / 100;
+
+const kwhOf = (e) => e.kwhReseau + e.kwhVert;
+const coutOf = (e) => e.coutReseau + e.coutVert;
+
+const LIEUX = {
+  domicile: { label: "Domicile", icon: "🏠" },
+  travail: { label: "Travail", icon: "💼" },
+  autre: { label: "Autre", icon: "📍" },
+};
+const isValidLieu = (l) => Object.prototype.hasOwnProperty.call(LIEUX, l);
+
+/* Vocabulaire dépendant du type de véhicule (électrique vs thermique) */
+function vocab(veh) {
+  const th = !!veh && veh.type === "thermique";
+  return {
+    hasVert: !th,
+    unit: th ? "L" : "kWh",
+    unitConso: th ? "L/100" : "kWh/100",
+    energyIcon: th ? "⛽" : "⚡",
+    energyLabel: th ? "Carburant" : "Réseau",
+    energyTotalLabel: th ? "Carburant total" : "Énergie totale",
+    titreNouveau: th ? "Nouveau plein" : "Nouvelle recharge",
+    ajouterLabel: th ? "Ajouter un plein" : "Ajouter une recharge",
+    enregistrerLabel: th ? "Enregistrer le plein" : "Enregistrer la recharge",
+    lieuTitre: th ? "Lieu du plein" : "Lieu de recharge",
+    actionsCap: th ? "Pleins" : "Recharges",
+    carnetLabel: th ? "Carnet de carburant" : "Carnet d’énergie",
+  };
+}
+
+function normaliser(e, defaultVehId) {
+  const lieu = isValidLieu(e.lieu) ? e.lieu : "domicile";
+  const vehiculeId = e.vehiculeId || defaultVehId;
+  if (e.kwhReseau != null || e.kwhVert != null) {
+    return { id: e.id, date: e.date, odo: e.odo, lieu, vehiculeId, kwhReseau: e.kwhReseau || 0, kwhVert: e.kwhVert || 0, coutReseau: e.coutReseau || 0, coutVert: e.coutVert || 0 };
+  }
+  const vert = e.src === "vert";
+  return { id: e.id, date: e.date, odo: e.odo, lieu, vehiculeId, kwhReseau: vert ? 0 : (e.kwh || 0), kwhVert: vert ? (e.kwh || 0) : 0, coutReseau: vert ? 0 : (e.cout || 0), coutVert: vert ? (e.cout || 0) : 0 };
+}
+
+const PERIODES = [
+  { id: "jour", label: "Jour", now: "Aujourd’hui" },
+  { id: "semaine", label: "Semaine", now: "Cette semaine" },
+  { id: "mois", label: "Mois", now: "Ce mois-ci" },
+  { id: "annee", label: "Année", now: "Cette année" },
+];
+
+function bucketOf(dateStr, periode) {
+  if (periode === "jour") return dateStr;
+  if (periode === "mois") return dateStr.slice(0, 7);
+  if (periode === "annee") return dateStr.slice(0, 4);
+  const d = new Date(dateStr + "T12:00:00");
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d.toISOString().slice(0, 10);
+}
+
+function bucketLabel(key, periode) {
+  if (periode === "annee") return key;
+  if (periode === "mois") {
+    const d = new Date(key + "-15T12:00:00");
+    return d.toLocaleDateString("fr-FR", { month: "short", year: "2-digit" });
+  }
+  const d = new Date(key + "T12:00:00");
+  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+}
+
+function fmtDate(dateStr) {
+  const d = new Date(dateStr + "T12:00:00");
+  return d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+}
+
+const COL_DOM = "#B4780C";
+/* Estimation ludique du CO2 évité — hypothèses volontairement simples :
+   ~120 g/km pour un thermique équivalent, ~50 g/kWh pour le mix électrique
+   français (le solaire compte pour 0). */
+const CO2_THERMIQUE_G_KM = 120;
+const CO2_ELEC_G_KWH = 50;
+const COL_TRAV = "#7C3AED";
+const COL_AUTRE = "#64748B";
+
+const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
+function bucketLabelLong(key, periode) {
+  if (periode === "annee") return key;
+  if (periode === "mois") {
+    const d = new Date(key + "-15T12:00:00");
+    return capitalize(d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }));
+  }
+  if (periode === "jour") {
+    const d = new Date(key + "T12:00:00");
+    return capitalize(d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
+  }
+  const start = new Date(key + "T12:00:00");
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  const sameMonth = start.getMonth() === end.getMonth();
+  const optsStart = sameMonth ? { day: "numeric" } : { day: "numeric", month: "short" };
+  return `Semaine du ${start.toLocaleDateString("fr-FR", optsStart)} au ${end.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}`;
+}
+
+function niceCeil(max) {
+  if (max <= 0) return 10;
+  const mag = Math.pow(10, Math.floor(Math.log10(max)));
+  const norm = max / mag;
+  const step = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10;
+  return step * mag;
+}
+
+function resizeImageFile(file, maxSize, cb) {
+  const reader = new FileReader();
+  reader.onload = function (ev) {
+    const img = new Image();
+    img.onload = function () {
+      let w = img.width, h = img.height;
+      const scale = Math.min(1, maxSize / Math.max(w, h));
+      w = Math.max(1, Math.round(w * scale));
+      h = Math.max(1, Math.round(h * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      cb(canvas.toDataURL("image/jpeg", 0.85));
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+/* --------------------------------- état ------------------------------------ */
+
+function loadVehicules() {
+  try {
+    const raw = localStorage.getItem(VKEY);
+    if (raw) {
+      const v = JSON.parse(raw);
+      if (v && Array.isArray(v.vehicules) && v.vehicules.length) return v;
+    }
+  } catch (e) { /* stockage indisponible */ }
+  return null;
+}
+function saveVehicules() {
+  try { localStorage.setItem(VKEY, JSON.stringify({ vehicules: state.vehicules, actifId: state.vehiculeActifId })); } catch (e) { /* stockage indisponible */ }
+}
+
+function load(defaultVehId) {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) return JSON.parse(raw).map((e) => normaliser(e, defaultVehId));
+  } catch (e) { /* stockage indisponible */ }
+  return [];
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state.entries)); } catch (e) { /* stockage indisponible */ }
+}
+
+let vdata = loadVehicules();
+if (!vdata) {
+  const dv = { id: "v-defaut", nom: "Tesla Model Y", type: "electrique", photo: null };
+  vdata = { vehicules: [dv], actifId: dv.id };
+}
+
+const state = {
+  vehicules: vdata.vehicules,
+  vehiculeActifId: vdata.vehicules.some((v) => v.id === vdata.actifId) ? vdata.actifId : vdata.vehicules[0].id,
+  entries: [],
+  periode: "mois",
+  histoOuvert: false,
+  armVider: false,
+  apercuKey: null,
+};
+state.entries = load(state.vehiculeActifId);
+
+function getVehiculeActif() { return state.vehicules.find((v) => v.id === state.vehiculeActifId) || state.vehicules[0]; }
+
+let dernierClic = { key: null, time: 0 };
+
+function addEntry(e) {
+  e.vehiculeId = state.vehiculeActifId;
+  state.entries.push(normaliser(e, state.vehiculeActifId));
+  save();
+  render();
+}
+function deleteEntry(id) { state.entries = state.entries.filter((e) => e.id !== id); save(); render(); }
+
+/* ------------------------------ calculs ------------------------------------ */
+
+function computeStats(entries) {
+  const parDate = [...entries].sort((a, b) => (a.date < b.date ? -1 : 1));
+  const totKwh = entries.reduce((s, e) => s + kwhOf(e), 0);
+  const totCout = entries.reduce((s, e) => s + coutOf(e), 0);
+  const kwhVert = entries.reduce((s, e) => s + e.kwhVert, 0);
+  const coutVert = entries.reduce((s, e) => s + e.coutVert, 0);
+  const kwhReseau = totKwh - kwhVert;
+  const coutReseau = totCout - coutVert;
+  const parOdo = entries.filter((e) => isFinite(e.odo) && e.odo > 0).sort((a, b) => a.odo - b.odo);
+  const dist = parOdo.length > 1 ? parOdo[parOdo.length - 1].odo - parOdo[0].odo : 0;
+  const intervalles = parOdo.length > 1 ? parOdo.length - 1 : 0;
+  const kwhAttrib = intervalles > 0 ? parOdo.slice(1).reduce((s, e) => s + kwhOf(e), 0) : 0;
+  const coutAttrib = intervalles > 0 ? parOdo.slice(1).reduce((s, e) => s + coutOf(e), 0) : 0;
+  const co2EviteKg = dist > 0 ? Math.max(0, (dist * CO2_THERMIQUE_G_KM - kwhReseau * CO2_ELEC_G_KWH)) / 1000 : null;
+  return {
+    totKwh, totCout, kwhVert, kwhReseau, dist, intervalles, co2EviteKg,
+    conso: dist > 0 ? (kwhAttrib / dist) * 100 : null,
+    cout100: dist > 0 ? (coutAttrib / dist) * 100 : null,
+    prixMoyen: totKwh > 0 ? totCout / totKwh : null,
+    prixReseau: kwhReseau > 0 ? coutReseau / kwhReseau : null,
+    premiere: parDate[0] ? parDate[0].date : null,
+  };
+}
+
+function computeBuckets(entries, periode) {
+  const map = new Map();
+  for (const e of entries) {
+    const k = bucketOf(e.date, periode);
+    let b = map.get(k);
+    if (!b) {
+      b = { key: k, cout: 0, kwh: 0, n: 0, kwhReseau: 0, kwhVert: 0, coutReseau: 0, coutVert: 0, kwhDomicile: 0, kwhTravail: 0, kwhAutre: 0, coutDomicile: 0, coutTravail: 0, coutAutre: 0 };
+      map.set(k, b);
+    }
+    const kwh = kwhOf(e), cout = coutOf(e);
+    b.cout += cout; b.kwh += kwh; b.n += 1;
+    b.kwhReseau += e.kwhReseau; b.kwhVert += e.kwhVert;
+    b.coutReseau += e.coutReseau; b.coutVert += e.coutVert;
+    const cle = e.lieu === "travail" ? "Travail" : e.lieu === "autre" ? "Autre" : "Domicile";
+    b["kwh" + cle] += kwh; b["cout" + cle] += cout;
+  }
+  return [...map.values()].sort((a, b) => (a.key < b.key ? -1 : 1));
+}
+
+/* -------------------------------- rendu HTML -------------------------------- */
+
+function carteStatHTML(icon, label, value, unit) {
+  return `<div class="vs-stat">
+    <div class="vs-stat-ico">${icon}</div>
+    <div class="vs-stat-label">${label}</div>
+    <div class="vs-stat-val vs-mono">${value}${unit ? `<span class="vs-stat-unit"> ${unit}</span>` : ""}</div>
+  </div>`;
+}
+
+function ligneLieuHTML(id, label, icon, kwh, cout, pct) {
+  return `<div class="vs-src-row">
+    <span class="vs-src-name"><span class="vs-pt ${id}"></span>${icon} ${label}</span>
+    <span class="vs-mono">${num(pct, 0)} %</span>
+    <span class="vs-src-cost vs-mono">${kwh > 0 ? eur(cout) : "—"}</span>
+  </div>`;
+}
+
+function rowHTML(e, voc, opts) {
+  opts = opts || {};
+  const kwh = kwhOf(e), cout = coutOf(e);
+  const lm = LIEUX[e.lieu] || LIEUX.domicile;
+  const chips = [];
+  if (e.kwhReseau > 0) chips.push(`<div class="vs-chip vs-mono">${voc.energyIcon} ${num(e.kwhReseau)} ${voc.unit}</div>`);
+  if (e.kwhVert > 0) chips.push(`<div class="vs-chip vs-mono vert">☀️ ${num(e.kwhVert)} ${voc.unit}</div>`);
+  const perTxt = cout > 0 ? `${eur(cout / kwh, 3)}/${voc.unit}` : (e.kwhVert > 0 ? "solaire" : "gratuit");
+  return `<div class="vs-row">
+    ${voc.hasVert ? `<span class="vs-lieu-dot ${e.lieu}" title="${lm.label}">${lm.icon}</span>` : ""}
+    <div class="vs-row-l">
+      <div class="vs-row-date">${fmtDate(e.date)}</div>
+      <div class="vs-row-odo vs-mono">${num(e.odo, 0)} km</div>
+    </div>
+    <div class="vs-chips">${chips.join("")}</div>
+    <div class="vs-row-r">
+      <div class="vs-row-cost vs-mono">${eur(cout)}</div>
+      <div class="vs-row-per">${perTxt}</div>
+    </div>
+    ${opts.deletable ? `<button class="vs-del" data-act="del" data-id="${e.id}" aria-label="Supprimer">🗑</button>` : ""}
+  </div>`;
+}
+
+function buildChartSVG(chartData, nowKey) {
+  if (!chartData.length) return `<div class="vs-apercu-vide">Aucune donnée</div>`;
+  const dark = document.documentElement.classList.contains("vs-dark");
+  const gridCol = dark ? "rgba(255,255,255,.12)" : "#E7EDF3";
+  const textCol = dark ? "#93A0B2" : "#5C6A7A";
+  const W = 328, H = 190;
+  const mTop = 8, mBottom = 22, mLeft = 30, mRight = 4;
+  const areaW = W - mLeft - mRight;
+  const baseline = H - mBottom;
+  const n = chartData.length;
+  const gap = 6;
+  let barW = (areaW - gap * (n - 1)) / n;
+  if (barW > 26) barW = 26;
+  if (barW < 4) barW = Math.max(4, (areaW - gap * (n - 1)) / n);
+  const totalW = n * barW + (n - 1) * gap;
+  const offsetX = mLeft + Math.max(0, (areaW - totalW) / 2);
+  const maxVal = Math.max(0, ...chartData.map((d) => d.cout));
+  const niceMax = niceCeil(maxVal);
+  const y = (v) => (niceMax > 0 ? baseline - (v / niceMax) * (baseline - mTop) : baseline);
+
+  let grid = "";
+  [0, niceMax / 2, niceMax].forEach((v) => {
+    const yy = y(v);
+    grid += `<line x1="${mLeft}" y1="${yy}" x2="${W - mRight}" y2="${yy}" stroke="${gridCol}" stroke-width="1"/>`;
+    grid += `<text x="${mLeft - 6}" y="${yy + 3}" font-size="9" fill="${textCol}" text-anchor="end">${Math.round(v)}€</text>`;
+  });
+
+  let bars = "", labels = "";
+  chartData.forEach((d, i) => {
+    const x0 = offsetX + i * (barW + gap);
+    const cx = x0 + barW / 2;
+    const opacity = d.key === nowKey ? 1 : 0.55;
+    const yDom = y(d.coutDomicile);
+    const yDomTrav = y(d.coutDomicile + d.coutTravail);
+    const yTotal = y(d.cout);
+    bars += `<rect x="${x0}" y="${yDom}" width="${barW}" height="${Math.max(0, baseline - yDom)}" fill="${COL_DOM}" fill-opacity="${opacity}"/>`;
+    bars += `<rect x="${x0}" y="${yDomTrav}" width="${barW}" height="${Math.max(0, yDom - yDomTrav)}" fill="${COL_TRAV}" fill-opacity="${opacity}"/>`;
+    bars += `<rect x="${x0}" y="${yTotal}" width="${barW}" height="${Math.max(0, yDomTrav - yTotal)}" fill="${COL_AUTRE}" fill-opacity="${opacity}"/>`;
+    bars += `<rect x="${x0 - 2}" y="${mTop}" width="${barW + 4}" height="${baseline - mTop}" fill="#000" fill-opacity="0" data-act="bar" data-key="${d.key}" style="cursor:pointer;pointer-events:all"/>`;
+    labels += `<text x="${cx}" y="${H - 6}" font-size="8.5" fill="${textCol}" text-anchor="middle">${d.label}</text>`;
+  });
+
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="190" style="display:block">${grid}${bars}${labels}</svg>`;
+}
+
+function vehChipHTML(v, active) {
+  const avatar = v.photo
+    ? `<div class="vs-veh-photo" style="background-image:url('${v.photo}')"></div>`
+    : `<div class="vs-veh-photo">${v.type === "thermique" ? "⛽" : "⚡"}</div>`;
+  return `<button class="vs-veh-chip ${active ? "on" : ""}" data-act="veh-select" data-id="${v.id}">
+    ${avatar}
+    <span class="vs-veh-name">${v.nom}</span>
+  </button>`;
+}
+function vehAddTileHTML() {
+  return `<button class="vs-veh-chip vs-veh-add" data-act="veh-add">
+    <div class="vs-veh-photo">+</div>
+    <span class="vs-veh-name">Ajouter</span>
+  </button>`;
+}
+
+function render() {
+  const veh = getVehiculeActif();
+  const voc = vocab(veh);
+  const entries = state.entries.filter((e) => e.vehiculeId === state.vehiculeActifId);
+  const periode = state.periode;
+  const stats = computeStats(entries);
+  const buckets = computeBuckets(entries, periode);
+  const nowKey = bucketOf(todayISO(), periode);
+  const vide0 = { cout: 0, kwh: 0, n: 0, kwhReseau: 0, kwhVert: 0, coutReseau: 0, coutVert: 0, kwhDomicile: 0, kwhTravail: 0, kwhAutre: 0, coutDomicile: 0, coutTravail: 0, coutAutre: 0 };
+  const cur = buckets.find((b) => b.key === nowKey) || vide0;
+  const idxNow = buckets.findIndex((b) => b.key === nowKey);
+  const delta = (idxNow > 0 && buckets[idxNow - 1].cout > 0) ? (cur.cout - buckets[idxNow - 1].cout) / buckets[idxNow - 1].cout : null;
+  const chartData = buckets.slice(-12).map((b) => Object.assign({}, b, { label: bucketLabel(b.key, periode), cout: Math.round(b.cout * 100) / 100 }));
+  const apercuBucket = buckets.find((b) => b.key === state.apercuKey) || null;
+  const perObj = PERIODES.find((p) => p.id === periode);
+  const histo = [...entries].sort((a, b) => (a.date > b.date ? -1 : a.date < b.date ? 1 : b.odo - a.odo));
+
+  const pctVert = cur.kwh > 0 ? (cur.kwhVert / cur.kwh) * 100 : 0;
+  const pctVertTotal = stats.totKwh > 0 ? (stats.kwhVert / stats.totKwh) * 100 : 0;
+  const economie = stats.prixReseau != null ? cur.kwhVert * stats.prixReseau - cur.coutVert : null;
+  const pctDom = cur.kwh > 0 ? (cur.kwhDomicile / cur.kwh) * 100 : 0;
+  const pctTrav = cur.kwh > 0 ? (cur.kwhTravail / cur.kwh) * 100 : 0;
+  const pctAutreL = cur.kwh > 0 ? (cur.kwhAutre / cur.kwh) * 100 : 0;
+
+  let html = `<div class="vs-wrap">
+    <header class="vs-head vs-in">
+      <div class="vs-logo">⚡</div>
+      <div>
+        <div class="vs-title">VoltSuivi</div>
+        <div class="vs-subtitle">${voc.carnetLabel} · ${veh.nom}</div>
+      </div>
+      <button class="vs-theme-btn" data-act="theme-toggle" aria-label="Changer de thème">${currentTheme === "dark" ? "☀️" : "🌙"}</button>
+    </header>
+    <div class="vs-veh-strip vs-in">
+      ${state.vehicules.map((v) => vehChipHTML(v, v.id === state.vehiculeActifId)).join("")}
+      ${state.vehicules.length < 3 ? vehAddTileHTML() : ""}
+    </div>`;
+
+  if (entries.length === 0) {
+    html += `<section class="vs-empty vs-in">
+      <div class="vs-empty-ico">🔋</div>
+      <div class="vs-empty-t">Aucun${voc.hasVert ? "e recharge" : " plein"} pour l’instant</div>
+      <p class="vs-empty-p">Enregistrez chaque${voc.hasVert ? " recharge — réseau, solaire ou un mélange des deux," : " plein"} à la maison, au travail ou ailleurs — et suivez ce que ${veh.nom} vous coûte réellement.</p>
+      <button class="vs-btn-p" data-act="open-sheet">${voc.ajouterLabel}</button>
+    </section>`;
+  } else {
+    html += `<section class="vs-hero vs-in" style="animation-delay:40ms">
+      <div class="vs-hero-top">
+        <span class="vs-eyebrow">${perObj.now}</span>
+        ${delta != null ? `<span class="vs-delta ${delta <= 0 ? "ok" : "up"}">${delta > 0 ? "+" : ""}${num(delta * 100, 0)} % vs période préc.</span>` : ""}
+      </div>
+      <div class="vs-hero-val">${eur(cur.cout)}</div>
+      <div class="vs-ruler" aria-hidden="true"></div>
+      <div class="vs-hero-sub">
+        <span><b class="vs-mono">${num(cur.kwh, 0)}</b> ${voc.unit}</span>
+        <span class="vs-dot">·</span>
+        <span><b class="vs-mono">${cur.n}</b> ${cur.n > 1 ? voc.actionsCap.toLowerCase() : voc.actionsCap.toLowerCase().slice(0, -1)}</span>
+      </div>
+      <div class="vs-hero-src">
+        ${voc.hasVert ? `
+          <span class="vs-tag reseau">⚡ ${num(cur.kwhReseau, 0)} ${voc.unit} réseau</span>
+          <span class="vs-tag vert">☀️ ${num(cur.kwhVert, 0)} ${voc.unit} vert</span>
+        ` : `<span class="vs-tag reseau">${voc.energyIcon} ${num(cur.kwh, 0)} ${voc.unit}</span>`}
+      </div>
+      <div class="vs-seg">
+        ${PERIODES.map((p) => `<button data-act="periode" data-val="${p.id}" class="${periode === p.id ? "on" : ""}">${p.label}</button>`).join("")}
+      </div>
+    </section>`;
+
+    html += `<section class="vs-card vs-in" style="animation-delay:90ms">
+      <div class="vs-card-h">Dépenses · ${perObj.label.toLowerCase()} par ${perObj.label.toLowerCase()}</div>
+      <div class="vs-apercu">
+        ${apercuBucket ? `
+          <div class="vs-apercu-top">
+            <span class="vs-apercu-label">${bucketLabel(apercuBucket.key, periode)}</span>
+            <span class="vs-apercu-val vs-mono">${eur(apercuBucket.cout)}</span>
+          </div>
+          <div class="vs-apercu-sub">
+            <span>${num(apercuBucket.kwh, 0)} ${voc.unit} · ${apercuBucket.n} ${apercuBucket.n > 1 ? voc.actionsCap.toLowerCase() : voc.actionsCap.toLowerCase().slice(0, -1)}</span>
+            ${voc.hasVert ? `<span class="vs-apercu-src"><span class="vs-pt reseau"></span> ${num(apercuBucket.kwhReseau, 0)}<span class="vs-pt vert"></span> ${num(apercuBucket.kwhVert, 0)} ${voc.unit}</span>` : ""}
+          </div>` : `<div class="vs-apercu-vide">Touchez une barre pour voir le détail</div>`}
+      </div>
+      <div class="vs-chart">${buildChartSVG(chartData, nowKey)}</div>
+      <div class="vs-chart-legend">
+        <span><span class="vs-pt domicile"></span>Domicile</span>
+        <span><span class="vs-pt travail"></span>Travail</span>
+        <span><span class="vs-pt autre"></span>Autre</span>
+        <span class="vs-chart-hint">Touchez 2× une barre pour le détail</span>
+      </div>
+    </section>`;
+
+    if (voc.hasVert) {
+      html += `<section class="vs-card vs-in" style="animation-delay:120ms">
+        <div class="vs-card-h vs-h-row">
+          <span>Origine · ${perObj.now.toLowerCase()}</span>
+          <span class="vs-pct">${num(pctVert, 0)} % vert</span>
+        </div>
+        <div class="vs-split">
+          <div class="vs-split-seg reseau" style="width:${100 - pctVert}%"></div>
+          <div class="vs-split-seg vert" style="width:${pctVert}%"></div>
+        </div>
+        <div class="vs-src-row">
+          <span class="vs-src-name"><span class="vs-pt reseau"></span> Réseau</span>
+          <span class="vs-mono">${num(cur.kwhReseau, 0)} kWh</span>
+          <span class="vs-src-cost vs-mono">${eur(cur.coutReseau)}</span>
+        </div>
+        <div class="vs-src-row">
+          <span class="vs-src-name"><span class="vs-pt vert"></span> Vert · solaire</span>
+          <span class="vs-mono">${num(cur.kwhVert, 0)} kWh</span>
+          <span class="vs-src-cost vs-mono">${cur.coutVert > 0 ? eur(cur.coutVert) : "gratuit"}</span>
+        </div>
+        ${(cur.kwhVert > 0 && economie != null && economie > 0) ? `<div class="vs-save">≈ ${eur(economie)} évités grâce au solaire</div>` : ""}
+      </section>`;
+    }
+
+    if (voc.hasVert) {
+      html += `<section class="vs-card vs-in" style="animation-delay:150ms">
+        <div class="vs-card-h">${voc.lieuTitre} · ${perObj.now.toLowerCase()}</div>
+        <div class="vs-split">
+          <div class="vs-split-seg domicile" style="width:${pctDom}%"></div>
+          <div class="vs-split-seg travail" style="width:${pctTrav}%"></div>
+          <div class="vs-split-seg autre" style="width:${pctAutreL}%"></div>
+        </div>
+        ${ligneLieuHTML("domicile", "Domicile", "🏠", cur.kwhDomicile, cur.coutDomicile, pctDom)}
+        ${ligneLieuHTML("travail", "Travail", "💼", cur.kwhTravail, cur.coutTravail, pctTrav)}
+        ${ligneLieuHTML("autre", "Autre", "📍", cur.kwhAutre, cur.coutAutre, pctAutreL)}
+      </section>`;
+    }
+
+    html += `<section class="vs-grid vs-in" style="animation-delay:180ms">
+      ${carteStatHTML("🛣", "Coût aux 100 km", eur(stats.cout100))}
+      ${carteStatHTML("⏱", "Conso moyenne", num(stats.conso), voc.unitConso)}
+      ${carteStatHTML("🪙", "Prix moyen", eur(stats.prixMoyen, 3), "/" + voc.unit)}
+      ${carteStatHTML(voc.energyIcon, voc.energyTotalLabel, num(stats.totKwh, 0), voc.unit)}
+    </section>`;
+
+    if (stats.intervalles > 0 && stats.intervalles < 5) {
+      html += `<p class="vs-total vs-in" style="animation-delay:195ms">Conso. et coût/100 km basés sur ${stats.intervalles} intervalle${stats.intervalles > 1 ? "s" : ""} — l’estimation s’affine avec le temps.</p>`;
+    }
+    if (stats.premiere) {
+      html += `<p class="vs-total vs-in" style="animation-delay:210ms">Depuis le ${fmtDate(stats.premiere)} : <b>${eur(stats.totCout)}</b> · ${num(stats.dist, 0)} km suivis${voc.hasVert ? ` · ${num(pctVertTotal, 0)} % vert` : ""}</p>`;
+    }
+    if (voc.hasVert && stats.co2EviteKg != null && stats.co2EviteKg > 0) {
+      html += `<div class="vs-co2 vs-in" style="animation-delay:225ms">
+        🌱 <b>${num(stats.co2EviteKg, 0)} kg</b> de CO2 évités par rapport à un thermique équivalent
+        <span class="vs-co2-note">Estimation : ~${CO2_THERMIQUE_G_KM} g/km thermique vs mix électrique français</span>
+      </div>`;
+    }
+
+    html += `<section class="vs-card vs-histo vs-in" style="animation-delay:240ms">
+      <button class="vs-card-h vs-h-row vs-toggle" data-act="toggle-histo" aria-expanded="${state.histoOuvert}">
+        <span>Historique <span class="vs-count">${entries.length}</span></span>
+        <span class="vs-toggle-r">
+          ${state.histoOuvert ? `<span class="vs-clear ${state.armVider ? "arm" : ""}" data-act="clear">${state.armVider ? "Confirmer l’effacement" : "Tout effacer"}</span>` : ""}
+          <span class="vs-chev ${state.histoOuvert ? "open" : ""}">▾</span>
+        </span>
+      </button>
+      <div class="vs-collapse ${state.histoOuvert ? "open" : ""}">
+        <div class="vs-collapse-inner">
+          <div class="vs-list">${histo.map((e) => rowHTML(e, voc, { deletable: true })).join("")}</div>
+        </div>
+      </div>
+    </section>`;
+  }
+
+  html += `<p class="vs-footer vs-in">
+    <button data-act="export">Exporter mes données</button> · <button data-act="import">Importer</button>
+  </p>`;
+  html += `</div><button class="vs-fab" data-act="open-sheet" aria-label="${voc.ajouterLabel}">+</button>`;
+  document.getElementById("app").innerHTML = html;
+}
+
+/* --------------------------------- feuille ---------------------------------- */
+
+function lastOdoPlaceholder() {
+  const mine = state.entries.filter((e) => e.vehiculeId === state.vehiculeActifId);
+  const lastOdo = mine.length ? Math.max(...mine.map((e) => e.odo)) : null;
+  return lastOdo ? `ex. ${num(lastOdo + 300, 0)}` : "ex. 24 500";
+}
+
+function openSheet() {
+  const veh = getVehiculeActif();
+  const voc = vocab(veh);
+  let lieu = "domicile";
+  let modeR = "total";
+  const wrap = document.createElement("div");
+  wrap.className = "vs-backdrop";
+  wrap.style.cssText = "position:fixed;top:0;right:0;bottom:0;left:0;";
+  wrap.innerHTML = `<div class="vs-sheet">
+    <div class="vs-sheet-head">
+      <div class="vs-sheet-title">${voc.titreNouveau}</div>
+      <button class="vs-close" id="sheetClose" aria-label="Fermer">✕</button>
+    </div>
+    <div class="vs-duo">
+      <label class="vs-field">
+        <span class="vs-label">Date</span>
+        <input type="date" id="f-date" value="${todayISO()}" max="${todayISO()}">
+      </label>
+      <label class="vs-field">
+        <span class="vs-label">Compteur</span>
+        <div class="vs-input-wrap">
+          <input inputmode="numeric" id="f-odo" placeholder="${lastOdoPlaceholder()}">
+          <span class="vs-suffix">km</span>
+        </div>
+      </label>
+    </div>
+    ${voc.hasVert ? `
+    <div class="vs-field">
+      <span class="vs-label">${voc.lieuTitre}</span>
+      <div class="vs-lieu-sel" id="f-lieu-sel">
+        <button type="button" class="domicile on" data-lieu="domicile"><span>🏠</span>Domicile</button>
+        <button type="button" class="travail" data-lieu="travail"><span>💼</span>Travail</button>
+        <button type="button" class="autre" data-lieu="autre"><span>📍</span>Autre</button>
+      </div>
+    </div>` : ""}
+    <div class="vs-block">
+      <div class="vs-block-head">
+        <span class="vs-block-t reseau">${voc.energyIcon} ${voc.energyLabel}</span>
+        <div class="vs-mode" id="f-mode">
+          <button type="button" class="on" data-mode="total">€ total</button>
+          <button type="button" data-mode="kwh">€/${voc.unit}</button>
+        </div>
+      </div>
+      <div class="vs-duo">
+        <div class="vs-input-wrap">
+          <input inputmode="decimal" id="f-kwhr" placeholder="0">
+          <span class="vs-suffix">${voc.unit}</span>
+        </div>
+        <div class="vs-input-wrap">
+          <input inputmode="decimal" id="f-prixr" placeholder="ex. 8,50">
+          <span class="vs-suffix" id="f-prixr-suffix">€</span>
+        </div>
+      </div>
+    </div>
+    ${voc.hasVert ? `
+    <div class="vs-block vert">
+      <div class="vs-block-head">
+        <span class="vs-block-t vert">☀️ Vert · solaire</span>
+        <span class="vs-block-note">gratuit par défaut</span>
+      </div>
+      <div class="vs-duo">
+        <div class="vs-input-wrap">
+          <input inputmode="decimal" id="f-kwhv" placeholder="0">
+          <span class="vs-suffix">${voc.unit}</span>
+        </div>
+        <div class="vs-input-wrap">
+          <input inputmode="decimal" id="f-prixv" placeholder="0" value="0">
+          <span class="vs-suffix">€</span>
+        </div>
+      </div>
+    </div>` : ""}
+    <div class="vs-hint" id="f-hint">${voc.hasVert ? "Remplis la ou les sources utilisées — une recharge peut mêler les deux" : `Renseigne le ${voc.unit === "L" ? "carburant ajouté" : "total de la recharge"}`}</div>
+    <button class="vs-submit" id="f-submit" disabled>${voc.enregistrerLabel}</button>
+  </div>`;
+  document.body.appendChild(wrap);
+  const $ = (sel) => wrap.querySelector(sel);
+
+  const lieuSel = $("#f-lieu-sel");
+  if (lieuSel) {
+    lieuSel.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-lieu]");
+      if (!btn) return;
+      lieu = btn.dataset.lieu;
+      lieuSel.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b === btn));
+    });
+  }
+
+  $("#f-mode").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-mode]");
+    if (!btn) return;
+    modeR = btn.dataset.mode;
+    $("#f-mode").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b === btn));
+    $("#f-prixr-suffix").textContent = modeR === "total" ? "€" : "€/" + voc.unit;
+    $("#f-prixr").placeholder = modeR === "total" ? "ex. 8,50" : "ex. 0,25";
+    updateHint();
+  });
+
+  function recompute() {
+    const o = pf($("#f-odo").value);
+    const kR = $("#f-kwhr").value.trim() === "" ? 0 : pf($("#f-kwhr").value);
+    const kvInput = $("#f-kwhv");
+    const pvInput = $("#f-prixv");
+    const kV = (!kvInput || kvInput.value.trim() === "") ? 0 : pf(kvInput.value);
+    const pR = pf($("#f-prixr").value);
+    const pV = (!pvInput || pvInput.value.trim() === "") ? 0 : pf(pvInput.value);
+    const coutR = kR > 0 ? (modeR === "total" ? pR : pR * kR) : 0;
+    const coutV = kV > 0 ? pV : 0;
+    const totalKwh = (isFinite(kR) ? kR : 0) + (isFinite(kV) ? kV : 0);
+    const valide = !!$("#f-date").value && isFinite(o) && o > 0 && isFinite(kR) && kR >= 0 && isFinite(kV) && kV >= 0 && (kR + kV) > 0 && isFinite(coutR) && coutR >= 0 && isFinite(coutV) && coutV >= 0;
+    return { o, kR, kV, coutR, coutV, totalKwh, valide };
+  }
+
+  function updateHint() {
+    const c = recompute();
+    let txt;
+    if (c.kR > 0 && !isFinite(c.coutR)) txt = `Indique le prix (0 si gratuit)`;
+    else if (c.totalKwh > 0 && isFinite(c.coutR + c.coutV)) txt = `Total : ${num(c.totalKwh)} ${voc.unit} · ${eur(c.coutR + c.coutV)}${voc.hasVert && c.kR > 0 && c.kV > 0 ? " · recharge mixte" : ""}`;
+    else txt = voc.hasVert ? "Remplis la ou les sources utilisées — une recharge peut mêler les deux" : `Renseigne le ${voc.unit === "L" ? "carburant ajouté" : "total"}`;
+    $("#f-hint").textContent = txt;
+    $("#f-submit").disabled = !c.valide;
+  }
+
+  wrap.addEventListener("input", updateHint);
+  updateHint();
+
+  function closeSheetEl() { wrap.remove(); }
+  $("#sheetClose").addEventListener("click", closeSheetEl);
+  wrap.addEventListener("click", (e) => { if (e.target === wrap) closeSheetEl(); });
+
+  $("#f-submit").addEventListener("click", () => {
+    const c = recompute();
+    if (!c.valide) return;
+    addEntry({
+      id: `${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
+      date: $("#f-date").value,
+      odo: Math.round(c.o),
+      lieu,
+      kwhReseau: round2(c.kR),
+      kwhVert: round2(c.kV),
+      coutReseau: round2(c.coutR),
+      coutVert: round2(c.coutV),
+    });
+    wrap.remove();
+  });
+}
+
+/* --------------------------- menu détail (double-tap) ----------------------- */
+
+function closeDetailEl() {
+  const el = document.getElementById("detailBackdrop");
+  if (el) el.remove();
+}
+
+function openDetail(key) {
+  closeDetailEl();
+  const veh = getVehiculeActif();
+  const voc = vocab(veh);
+  const periode = state.periode;
+  const entries = state.entries.filter((e) => e.vehiculeId === state.vehiculeActifId);
+  const buckets = computeBuckets(entries, periode);
+  const bucket = buckets.find((b) => b.key === key);
+  if (!bucket) return;
+  const idx = buckets.findIndex((b) => b.key === key);
+  const prev = idx > 0 ? buckets[idx - 1] : null;
+  const next = idx < buckets.length - 1 ? buckets[idx + 1] : null;
+
+  const pctVert = bucket.kwh > 0 ? (bucket.kwhVert / bucket.kwh) * 100 : 0;
+  const pctDom = bucket.kwh > 0 ? (bucket.kwhDomicile / bucket.kwh) * 100 : 0;
+  const pctTrav = bucket.kwh > 0 ? (bucket.kwhTravail / bucket.kwh) * 100 : 0;
+  const pctAutreL = bucket.kwh > 0 ? (bucket.kwhAutre / bucket.kwh) * 100 : 0;
+
+  const items = entries
+    .filter((e) => bucketOf(e.date, periode) === bucket.key)
+    .sort((a, b) => (a.date > b.date ? -1 : a.date < b.date ? 1 : b.odo - a.odo));
+
+  const wrap = document.createElement("div");
+  wrap.className = "vs-backdrop";
+  wrap.id = "detailBackdrop";
+  wrap.style.cssText = "position:fixed;top:0;right:0;bottom:0;left:0;";
+  wrap.innerHTML = `<div class="vs-sheet vs-detail">
+    <div class="vs-detail-head">
+      <button class="vs-nav" id="detPrev" ${!prev ? "disabled" : ""} aria-label="Période précédente">‹</button>
+      <div class="vs-detail-title">
+        <div class="vs-sheet-title">${bucketLabelLong(bucket.key, periode)}</div>
+        <div class="vs-detail-sub">${eur(bucket.cout)} · ${num(bucket.kwh, 0)} ${voc.unit} · ${bucket.n} ${bucket.n > 1 ? voc.actionsCap.toLowerCase() : voc.actionsCap.toLowerCase().slice(0, -1)}</div>
+      </div>
+      <button class="vs-nav" id="detNext" ${!next ? "disabled" : ""} aria-label="Période suivante">›</button>
+      <button class="vs-close" id="detClose" aria-label="Fermer">✕</button>
+    </div>
+    ${voc.hasVert ? `
+    <div class="vs-detail-block">
+      <div class="vs-detail-label">Origine de l’énergie</div>
+      <div class="vs-split">
+        <div class="vs-split-seg reseau" style="width:${100 - pctVert}%"></div>
+        <div class="vs-split-seg vert" style="width:${pctVert}%"></div>
+      </div>
+      <div class="vs-src-row">
+        <span class="vs-src-name"><span class="vs-pt reseau"></span> Réseau</span>
+        <span class="vs-mono">${num(100 - pctVert, 0)} %</span>
+        <span class="vs-src-cost vs-mono">${eur(bucket.coutReseau)}</span>
+      </div>
+      <div class="vs-src-row">
+        <span class="vs-src-name"><span class="vs-pt vert"></span> Vert · solaire</span>
+        <span class="vs-mono">${num(pctVert, 0)} %</span>
+        <span class="vs-src-cost vs-mono">${bucket.coutVert > 0 ? eur(bucket.coutVert) : "gratuit"}</span>
+      </div>
+    </div>` : ""}
+    ${voc.hasVert ? `
+    <div class="vs-detail-block">
+      <div class="vs-detail-label">${voc.lieuTitre}</div>
+      <div class="vs-split">
+        <div class="vs-split-seg domicile" style="width:${pctDom}%"></div>
+        <div class="vs-split-seg travail" style="width:${pctTrav}%"></div>
+        <div class="vs-split-seg autre" style="width:${pctAutreL}%"></div>
+      </div>
+      ${ligneLieuHTML("domicile", "Domicile", "🏠", bucket.kwhDomicile, bucket.coutDomicile, pctDom)}
+      ${ligneLieuHTML("travail", "Travail", "💼", bucket.kwhTravail, bucket.coutTravail, pctTrav)}
+      ${ligneLieuHTML("autre", "Autre", "📍", bucket.kwhAutre, bucket.coutAutre, pctAutreL)}
+    </div>` : ""}
+    <div class="vs-detail-block">
+      <div class="vs-detail-label">${voc.actionsCap} de la période · ${items.length}</div>
+      <div class="vs-list">${items.map((e) => rowHTML(e, voc, { deletable: false })).join("")}</div>
+    </div>
+  </div>`;
+  document.body.appendChild(wrap);
+  wrap.querySelector("#detClose").addEventListener("click", closeDetailEl);
+  wrap.addEventListener("click", (e) => { if (e.target === wrap) closeDetailEl(); });
+  if (prev) wrap.querySelector("#detPrev").addEventListener("click", () => openDetail(prev.key));
+  if (next) wrap.querySelector("#detNext").addEventListener("click", () => openDetail(next.key));
+}
+
+/* ---------------------------------- véhicules -------------------------------- */
+
+function openVehiculeSheet(id) {
+  const editing = !!id;
+  const veh0 = editing ? state.vehicules.find((v) => v.id === id) : null;
+  let type = veh0 ? veh0.type : "electrique";
+  let photoData = veh0 ? veh0.photo : null;
+  let armDel = false;
+
+  const wrap = document.createElement("div");
+  wrap.className = "vs-backdrop";
+  wrap.style.cssText = "position:fixed;top:0;right:0;bottom:0;left:0;";
+  wrap.innerHTML = `<div class="vs-sheet">
+    <div class="vs-sheet-head">
+      <div class="vs-sheet-title">${editing ? "Modifier le véhicule" : "Ajouter un véhicule"}</div>
+      <button class="vs-close" id="vehClose" aria-label="Fermer">✕</button>
+    </div>
+    <div class="vs-veh-photo-pick">
+      <div class="vs-veh-photo-big" id="vehPhotoPreview">${photoData ? `<img src="${photoData}">` : `<span>${type === "thermique" ? "⛽" : "⚡"}</span>`}</div>
+      <input type="file" accept="image/*" id="vehPhotoInput" style="display:none">
+      <div class="vs-veh-photo-actions" id="vehPhotoActions"></div>
+    </div>
+    <label class="vs-field">
+      <span class="vs-label">Nom du véhicule</span>
+      <input type="text" id="vehNom" placeholder="ex. Tesla Model Y" value="${veh0 ? veh0.nom : ""}">
+    </label>
+    <div class="vs-field">
+      <span class="vs-label">Type</span>
+      <div class="vs-lieu-sel vs-2col" id="vehType">
+        <button type="button" class="electrique ${type === "electrique" ? "on" : ""}" data-type="electrique"><span>⚡</span>Électrique</button>
+        <button type="button" class="thermique ${type === "thermique" ? "on" : ""}" data-type="thermique"><span>⛽</span>Thermique</button>
+      </div>
+    </div>
+    <button class="vs-submit" id="vehSave">${editing ? "Enregistrer" : "Ajouter ce véhicule"}</button>
+    ${editing && state.vehicules.length > 1 ? `<button class="vs-veh-del" id="vehDelete">Supprimer ce véhicule</button>` : ""}
+  </div>`;
+  document.body.appendChild(wrap);
+  const $ = (sel) => wrap.querySelector(sel);
+
+  function refreshPhotoActions() {
+    $("#vehPhotoActions").innerHTML = `<button type="button" class="vs-veh-photo-btn" id="vehPhotoPickBtn">📷 ${photoData ? "Changer la photo" : "Ajouter une photo"}</button>${photoData ? '<button type="button" class="vs-veh-photo-btn ghost" id="vehPhotoRemoveBtn">Retirer</button>' : ""}`;
+    $("#vehPhotoPickBtn").addEventListener("click", () => $("#vehPhotoInput").click());
+    const rb = $("#vehPhotoRemoveBtn");
+    if (rb) rb.addEventListener("click", () => {
+      photoData = null;
+      $("#vehPhotoPreview").innerHTML = `<span>${type === "thermique" ? "⛽" : "⚡"}</span>`;
+      refreshPhotoActions();
+    });
+  }
+  refreshPhotoActions();
+
+  $("#vehPhotoInput").addEventListener("change", (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    resizeImageFile(file, 240, (dataUrl) => {
+      photoData = dataUrl;
+      $("#vehPhotoPreview").innerHTML = `<img src="${dataUrl}">`;
+      refreshPhotoActions();
+    });
+  });
+
+  $("#vehType").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-type]");
+    if (!btn) return;
+    type = btn.dataset.type;
+    $("#vehType").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b === btn));
+    if (!photoData) $("#vehPhotoPreview").innerHTML = `<span>${type === "thermique" ? "⛽" : "⚡"}</span>`;
+  });
+
+  function closeVehEl() { wrap.remove(); }
+  $("#vehClose").addEventListener("click", closeVehEl);
+  wrap.addEventListener("click", (e) => { if (e.target === wrap) closeVehEl(); });
+
+  $("#vehSave").addEventListener("click", () => {
+    const nom = $("#vehNom").value.trim();
+    if (!nom) { $("#vehNom").style.borderColor = "#C0392B"; $("#vehNom").focus(); return; }
+    if (editing) {
+      veh0.nom = nom; veh0.type = type; veh0.photo = photoData;
+    } else {
+      if (state.vehicules.length >= 3) { wrap.remove(); return; }
+      const nv = { id: "v-" + Date.now() + "-" + Math.floor(Math.random() * 1e4), nom, type, photo: photoData };
+      state.vehicules.push(nv);
+      state.vehiculeActifId = nv.id;
+      state.apercuKey = null;
+    }
+    saveVehicules();
+    wrap.remove();
+    render();
+  });
+
+  const delBtn = $("#vehDelete");
+  if (delBtn) {
+    delBtn.addEventListener("click", () => {
+      if (!armDel) {
+        armDel = true;
+        delBtn.textContent = "Confirmer — efface aussi ses recharges";
+        delBtn.classList.add("arm");
+        return;
+      }
+      state.vehicules = state.vehicules.filter((v) => v.id !== id);
+      state.entries = state.entries.filter((e) => e.vehiculeId !== id);
+      if (state.vehiculeActifId === id) state.vehiculeActifId = state.vehicules[0].id;
+      state.apercuKey = null;
+      saveVehicules();
+      save();
+      wrap.remove();
+      render();
+    });
+  }
+}
+
+/* ------------------------------- interactions -------------------------------- */
+
+/* --------------------------------- sauvegarde --------------------------------- */
+
+function exportData() {
+  const payload = { vehicules: state.vehicules, entries: state.entries, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `voltsuivi-sauvegarde-${todayISO()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function importData() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "application/json";
+  input.addEventListener("change", (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (Array.isArray(data.vehicules) && data.vehicules.length) {
+          state.vehicules = data.vehicules;
+          state.vehiculeActifId = state.vehicules[0].id;
+        }
+        const defId = state.vehiculeActifId;
+        if (Array.isArray(data.entries)) {
+          state.entries = data.entries.map((en) => normaliser(en, defId));
+        }
+        saveVehicules();
+        save();
+        state.apercuKey = null;
+        render();
+      } catch (err) {
+        alert("Ce fichier ne ressemble pas à une sauvegarde VoltSuivi valide.");
+      }
+    };
+    reader.readAsText(file);
+  });
+  input.click();
+}
+
+function handleBarClick(key) {
+  state.apercuKey = key;
+  const now = Date.now();
+  if (dernierClic.key === key && now - dernierClic.time < 450) {
+    dernierClic = { key: null, time: 0 };
+    render();
+    openDetail(key);
+  } else {
+    dernierClic = { key, time: now };
+    render();
+  }
+}
+
+document.getElementById("app").addEventListener("click", (e) => {
+  const el = e.target.closest("[data-act]");
+  if (!el) return;
+  const act = el.dataset.act;
+  if (act === "open-sheet") openSheet();
+  else if (act === "periode") { state.periode = el.dataset.val; state.apercuKey = null; render(); }
+  else if (act === "toggle-histo") { state.histoOuvert = !state.histoOuvert; render(); }
+  else if (act === "clear") {
+    if (!state.armVider) { state.armVider = true; render(); }
+    else { const autres = state.entries.filter((e) => e.vehiculeId !== state.vehiculeActifId); state.entries = autres; state.armVider = false; save(); render(); }
+  }
+  else if (act === "del") deleteEntry(el.dataset.id);
+  else if (act === "bar") handleBarClick(el.dataset.key);
+  else if (act === "veh-select") {
+    const id = el.dataset.id;
+    if (id === state.vehiculeActifId) openVehiculeSheet(id);
+    else { state.vehiculeActifId = id; state.apercuKey = null; state.histoOuvert = false; saveVehicules(); render(); }
+  }
+  else if (act === "veh-add") openVehiculeSheet(null);
+  else if (act === "export") exportData();
+  else if (act === "import") importData();
+  else if (act === "theme-toggle") {
+    currentTheme = currentTheme === "dark" ? "light" : "dark";
+    applyTheme(currentTheme);
+    try { localStorage.setItem(THEME_KEY, currentTheme); } catch (e) { /* stockage indisponible */ }
+    render();
+  }
+});
+
+document.getElementById("app").addEventListener("pointerover", (e) => {
+  const el = e.target.closest('[data-act="bar"]');
+  if (!el) return;
+  if (state.apercuKey !== el.dataset.key) { state.apercuKey = el.dataset.key; render(); }
+});
+
+render();
+</script>
+</body>
+</html>
