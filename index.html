@@ -41,7 +41,7 @@ body { font-family: 'Instrument Sans', system-ui, -apple-system, sans-serif; }
   --bg: #0B0F17;
   --encre: #E9EDF3;
   --brume: #93A0B2;
-  --carte: #161C27;
+  --carte: #1B2432;
   --ligne: #262F3D;
   --cuivre: #E8935B;
   --cuivre-f: #F3B183;
@@ -93,19 +93,46 @@ html, body { background: var(--bg); }
 }
 .vs-theme-btn:active { transform: scale(.94); }
 
-/* sélecteur de véhicules */
-.vs-veh-strip { display: flex; gap: 10px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 2px; }
-.vs-veh-chip { display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; width: 60px; }
-.vs-veh-photo {
-  width: 48px; height: 48px; border-radius: 50%; background-size: cover; background-position: center;
-  display: grid; place-items: center; font-size: 20px; background-color: var(--fill); color: var(--brume);
-  border: 2px solid transparent; transition: border-color .15s, transform .1s;
+/* sélecteur de véhicule actif */
+.vs-veh-current { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.vs-veh-current-main { display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0; text-align: left; }
+.vs-veh-photo-md {
+  width: 56px; height: 56px; border-radius: 50%; background-size: cover; background-position: center;
+  display: grid; place-items: center; font-size: 22px; background-color: var(--fill); color: var(--brume);
+  flex-shrink: 0; border: 2px solid var(--ligne);
 }
-.vs-veh-chip.on .vs-veh-photo { border-color: var(--cuivre); }
-.vs-veh-chip:active .vs-veh-photo { transform: scale(.94); }
-.vs-veh-name { font-size: 10.5px; color: var(--brume); font-weight: 600; max-width: 58px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.vs-veh-chip.on .vs-veh-name { color: var(--encre); }
-.vs-veh-add .vs-veh-photo { background: #FFF; border: 2px dashed var(--ligne); color: var(--brume); font-size: 22px; font-weight: 300; }
+.vs-veh-current-name { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vs-veh-current-type { font-size: 11.5px; color: var(--brume); font-weight: 500; margin-top: 1px; }
+.vs-veh-switch-btn {
+  width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0; background: var(--fill);
+  border: 1px solid var(--ligne); font-size: 19px; font-weight: 700;
+  display: grid; place-items: center; color: var(--encre); transition: background .15s, transform .1s;
+}
+.vs-veh-switch-btn:active { transform: scale(.94); background: var(--ligne); }
+
+/* fiche de sélection des véhicules */
+.vs-veh-list { display: flex; flex-direction: column; gap: 8px; }
+.vs-veh-list-row {
+  display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 14px;
+  border: 1px solid var(--ligne); background: var(--carte); text-align: left; transition: border-color .15s, background .15s;
+}
+.vs-veh-list-row.on { border-color: var(--cuivre); background: var(--fill); }
+.vs-veh-list-row .vs-veh-current-name { font-size: 14.5px; }
+.vs-veh-check { margin-left: auto; color: var(--cuivre); font-size: 16px; font-weight: 700; flex-shrink: 0; }
+.vs-veh-add-ico { border: 2px dashed var(--ligne); background: var(--carte); color: var(--brume); font-size: 20px; font-weight: 300; }
+
+/* outil de recadrage photo */
+.vs-crop-vp {
+  position: relative; overflow: hidden; border-radius: 18px; margin: 0 auto;
+  background: #000; touch-action: none; cursor: grab;
+}
+.vs-crop-vp:active { cursor: grabbing; }
+.vs-crop-vp img { position: absolute; top: 0; left: 0; max-width: none; pointer-events: none; }
+.vs-crop-mask { position: absolute; top: 14px; left: 14px; right: 14px; bottom: 14px; border-radius: 50%; box-shadow: 0 0 0 9999px rgba(0,0,0,.55); pointer-events: none; }
+.vs-crop-zoom { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+.vs-crop-zoom span { font-size: 15px; flex-shrink: 0; }
+.vs-crop-zoom input[type="range"] { flex: 1; accent-color: var(--cuivre); }
+.vs-crop-hint { text-align: center; font-size: 11.5px; color: var(--brume); margin-top: 10px; }
 
 /* héro « compteur » */
 .vs-hero {
@@ -294,6 +321,8 @@ html, body { background: var(--bg); }
 .vs-sheet {
   background: var(--carte); width: 100%; max-width: 480px;
   border-radius: 22px 22px 0 0; padding: 18px 18px 24px;
+  border: 1px solid var(--ligne); border-bottom: none;
+  box-shadow: 0 -12px 32px rgba(0,0,0,.28);
   animation: vsUp .32s cubic-bezier(.2,.7,.2,1) both;
   max-height: 88vh; overflow-y: auto;
   font-family: 'Instrument Sans', system-ui, -apple-system, sans-serif;
@@ -330,7 +359,7 @@ html, body { background: var(--bg); }
 }
 .vs-field input[type="text"] { font-family: 'Instrument Sans', sans-serif; }
 .vs-field input[type="date"] { font-family: 'Instrument Sans', sans-serif; }
-.vs-field input:focus, .vs-input-wrap input:focus { border-color: var(--circuit); outline: none; background: #FFF; }
+.vs-field input:focus, .vs-input-wrap input:focus { border-color: var(--circuit); outline: none; background: var(--carte); }
 .vs-input-wrap { position: relative; }
 .vs-suffix {
   position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
@@ -376,7 +405,7 @@ html, body { background: var(--bg); }
 /* fiche véhicule */
 .vs-veh-photo-pick { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 16px; }
 .vs-veh-photo-big {
-  width: 84px; height: 84px; border-radius: 50%; overflow: hidden; background: var(--fill);
+  width: 108px; height: 108px; border-radius: 50%; overflow: hidden; background: var(--fill);
   display: grid; place-items: center; font-size: 34px;
 }
 .vs-veh-photo-big img { width: 100%; height: 100%; object-fit: cover; }
@@ -533,20 +562,96 @@ function niceCeil(max) {
   return step * mag;
 }
 
-function resizeImageFile(file, maxSize, cb) {
+function openCropTool(file, onConfirm) {
+  const VP = 260, OUT = 320;
   const reader = new FileReader();
   reader.onload = function (ev) {
     const img = new Image();
     img.onload = function () {
-      let w = img.width, h = img.height;
-      const scale = Math.min(1, maxSize / Math.max(w, h));
-      w = Math.max(1, Math.round(w * scale));
-      h = Math.max(1, Math.round(h * scale));
-      const canvas = document.createElement("canvas");
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, w, h);
-      cb(canvas.toDataURL("image/jpeg", 0.85));
+      const naturalW = img.width, naturalH = img.height;
+      const baseScale = VP / Math.min(naturalW, naturalH);
+      let zoom = 1;
+      const dispW = () => naturalW * baseScale * zoom;
+      const dispH = () => naturalH * baseScale * zoom;
+      let offX = (VP - dispW()) / 2;
+      let offY = (VP - dispH()) / 2;
+
+      const wrap = document.createElement("div");
+      wrap.className = "vs-backdrop";
+      wrap.style.cssText = "position:fixed;top:0;right:0;bottom:0;left:0;z-index:60;";
+      wrap.innerHTML = `<div class="vs-sheet">
+        <div class="vs-sheet-head">
+          <div class="vs-sheet-title">Ajuster la photo</div>
+          <button class="vs-close" id="cropClose" aria-label="Fermer">✕</button>
+        </div>
+        <div class="vs-crop-vp" id="cropVp" style="width:${VP}px;height:${VP}px;">
+          <img id="cropImg" src="${ev.target.result}" alt="">
+          <div class="vs-crop-mask"></div>
+        </div>
+        <div class="vs-crop-zoom">
+          <span>🔍</span>
+          <input type="range" id="cropZoom" min="1" max="3.5" step="0.01" value="1">
+        </div>
+        <p class="vs-crop-hint">Glisse la photo pour la repositionner, utilise le curseur pour zoomer</p>
+        <button class="vs-submit" id="cropConfirm">Valider le cadrage</button>
+      </div>`;
+      document.body.appendChild(wrap);
+
+      const imgEl = wrap.querySelector("#cropImg");
+      const vpEl = wrap.querySelector("#cropVp");
+      const zoomEl = wrap.querySelector("#cropZoom");
+
+      function updateTransform() {
+        const w = dispW(), h = dispH();
+        const minX = Math.min(0, VP - w), minY = Math.min(0, VP - h);
+        offX = Math.max(minX, Math.min(0, offX));
+        offY = Math.max(minY, Math.min(0, offY));
+        imgEl.style.width = w + "px";
+        imgEl.style.height = h + "px";
+        imgEl.style.transform = `translate(${offX}px, ${offY}px)`;
+      }
+      updateTransform();
+
+      let dragging = false, startX = 0, startY = 0, startOffX = 0, startOffY = 0;
+      vpEl.addEventListener("pointerdown", (e) => {
+        dragging = true;
+        startX = e.clientX; startY = e.clientY;
+        startOffX = offX; startOffY = offY;
+        try { vpEl.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+      });
+      vpEl.addEventListener("pointermove", (e) => {
+        if (!dragging) return;
+        offX = startOffX + (e.clientX - startX);
+        offY = startOffY + (e.clientY - startY);
+        updateTransform();
+      });
+      const stopDrag = () => { dragging = false; };
+      vpEl.addEventListener("pointerup", stopDrag);
+      vpEl.addEventListener("pointercancel", stopDrag);
+
+      zoomEl.addEventListener("input", () => {
+        const oldW = dispW(), oldH = dispH();
+        zoom = parseFloat(zoomEl.value);
+        const newW = dispW(), newH = dispH();
+        offX -= (newW - oldW) / 2;
+        offY -= (newH - oldH) / 2;
+        updateTransform();
+      });
+
+      function close() { wrap.remove(); }
+      wrap.querySelector("#cropClose").addEventListener("click", close);
+      wrap.addEventListener("click", (e) => { if (e.target === wrap) close(); });
+
+      wrap.querySelector("#cropConfirm").addEventListener("click", () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = OUT; canvas.height = OUT;
+        const ctx = canvas.getContext("2d");
+        const outScale = OUT / VP;
+        ctx.drawImage(img, offX * outScale, offY * outScale, dispW() * outScale, dispH() * outScale);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.88);
+        close();
+        onConfirm(dataUrl);
+      });
     };
     img.src = ev.target.result;
   };
@@ -740,19 +845,19 @@ function buildChartSVG(chartData, nowKey) {
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="190" style="display:block">${grid}${bars}${labels}</svg>`;
 }
 
-function vehChipHTML(v, active) {
-  const avatar = v.photo
-    ? `<div class="vs-veh-photo" style="background-image:url('${v.photo}')"></div>`
-    : `<div class="vs-veh-photo">${v.type === "thermique" ? "⛽" : "⚡"}</div>`;
-  return `<button class="vs-veh-chip ${active ? "on" : ""}" data-act="veh-select" data-id="${v.id}">
-    ${avatar}
-    <span class="vs-veh-name">${v.nom}</span>
-  </button>`;
+function vehAvatarHTML(v, cls) {
+  return v.photo
+    ? `<div class="${cls}" style="background-image:url('${v.photo}')"></div>`
+    : `<div class="${cls}">${v.type === "thermique" ? "⛽" : "⚡"}</div>`;
 }
-function vehAddTileHTML() {
-  return `<button class="vs-veh-chip vs-veh-add" data-act="veh-add">
-    <div class="vs-veh-photo">+</div>
-    <span class="vs-veh-name">Ajouter</span>
+function vehListRowHTML(v, active) {
+  return `<button class="vs-veh-list-row ${active ? "on" : ""}" data-veh-pick="${v.id}">
+    ${vehAvatarHTML(v, "vs-veh-photo-md")}
+    <div>
+      <div class="vs-veh-current-name">${v.nom}</div>
+      <div class="vs-veh-current-type">${v.type === "thermique" ? "Thermique" : "Électrique"}</div>
+    </div>
+    ${active ? '<span class="vs-veh-check">✓</span>' : ""}
   </button>`;
 }
 
@@ -789,9 +894,15 @@ function render() {
       </div>
       <button class="vs-theme-btn" data-act="theme-toggle" aria-label="Changer de thème">${currentTheme === "dark" ? "☀️" : "🌙"}</button>
     </header>
-    <div class="vs-veh-strip vs-in">
-      ${state.vehicules.map((v) => vehChipHTML(v, v.id === state.vehiculeActifId)).join("")}
-      ${state.vehicules.length < 3 ? vehAddTileHTML() : ""}
+    <div class="vs-veh-current vs-in">
+      <button class="vs-veh-current-main" data-act="veh-edit-active">
+        ${vehAvatarHTML(veh, "vs-veh-photo-md")}
+        <div>
+          <div class="vs-veh-current-name">${veh.nom}</div>
+          <div class="vs-veh-current-type">${veh.type === "thermique" ? "Thermique" : "Électrique"}</div>
+        </div>
+      </button>
+      <button class="vs-veh-switch-btn" data-act="veh-switcher" aria-label="Changer de véhicule">▾</button>
     </div>`;
 
   if (entries.length === 0) {
@@ -1169,6 +1280,44 @@ function openDetail(key) {
 
 /* ---------------------------------- véhicules -------------------------------- */
 
+function openVehiculeSwitcher() {
+  const wrap = document.createElement("div");
+  wrap.className = "vs-backdrop";
+  wrap.style.cssText = "position:fixed;top:0;right:0;bottom:0;left:0;";
+  wrap.innerHTML = `<div class="vs-sheet">
+    <div class="vs-sheet-head">
+      <div class="vs-sheet-title">Choisir un véhicule</div>
+      <button class="vs-close" id="swClose" aria-label="Fermer">✕</button>
+    </div>
+    <div class="vs-veh-list">
+      ${state.vehicules.map((v) => vehListRowHTML(v, v.id === state.vehiculeActifId)).join("")}
+      ${state.vehicules.length < 3 ? `<button class="vs-veh-list-row" data-act-add="1">
+        <div class="vs-veh-photo-md vs-veh-add-ico">+</div>
+        <div class="vs-veh-current-name">Ajouter un véhicule</div>
+      </button>` : ""}
+    </div>
+  </div>`;
+  document.body.appendChild(wrap);
+  const close = () => wrap.remove();
+  wrap.querySelector("#swClose").addEventListener("click", close);
+  wrap.addEventListener("click", (e) => { if (e.target === wrap) close(); });
+  wrap.querySelectorAll("[data-veh-pick]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.vehPick;
+      if (id !== state.vehiculeActifId) {
+        state.vehiculeActifId = id;
+        state.apercuKey = null;
+        state.histoOuvert = false;
+        saveVehicules();
+      }
+      close();
+      render();
+    });
+  });
+  const addBtn = wrap.querySelector("[data-act-add]");
+  if (addBtn) addBtn.addEventListener("click", () => { close(); openVehiculeSheet(null); });
+}
+
 function openVehiculeSheet(id) {
   const editing = !!id;
   const veh0 = editing ? state.vehicules.find((v) => v.id === id) : null;
@@ -1221,11 +1370,12 @@ function openVehiculeSheet(id) {
   $("#vehPhotoInput").addEventListener("change", (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
-    resizeImageFile(file, 240, (dataUrl) => {
+    openCropTool(file, (dataUrl) => {
       photoData = dataUrl;
       $("#vehPhotoPreview").innerHTML = `<img src="${dataUrl}">`;
       refreshPhotoActions();
     });
+    e.target.value = "";
   });
 
   $("#vehType").addEventListener("click", (e) => {
@@ -1353,12 +1503,8 @@ document.getElementById("app").addEventListener("click", (e) => {
   }
   else if (act === "del") deleteEntry(el.dataset.id);
   else if (act === "bar") handleBarClick(el.dataset.key);
-  else if (act === "veh-select") {
-    const id = el.dataset.id;
-    if (id === state.vehiculeActifId) openVehiculeSheet(id);
-    else { state.vehiculeActifId = id; state.apercuKey = null; state.histoOuvert = false; saveVehicules(); render(); }
-  }
-  else if (act === "veh-add") openVehiculeSheet(null);
+  else if (act === "veh-edit-active") openVehiculeSheet(state.vehiculeActifId);
+  else if (act === "veh-switcher") openVehiculeSwitcher();
   else if (act === "export") exportData();
   else if (act === "import") importData();
   else if (act === "theme-toggle") {
