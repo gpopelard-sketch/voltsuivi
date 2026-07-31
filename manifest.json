@@ -1,0 +1,27 @@
+{
+  "background_color": "#111B2B",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "VoltSuivi",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "VoltSuivi",
+  "start_url": "/",
+  "theme_color": "#111B2B",
+  "description": "Carnet de suivi des recharges et pleins pour véhicules électriques et thermiques",
+  "id": "voltsuivi",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
